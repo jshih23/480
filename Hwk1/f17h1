@@ -1,0 +1,274 @@
+	P R E L I M I N A R Y    S P E C I F I C A T I O N
+
+				 Due 2:00 AM, Friday, 15 September 2017
+
+CPSC 323   Homework #1  Directory "Tree" Search
+
+(60 points) Write a utility
+
+  % nfind [-P | -L]* FILENAME* EXPRESSION
+
+that searches the directory tree rooted at each given FILENAME by evaluating
+the given expression from left to right, according to the rules of precedence,
+until the outcome is known (the left-hand side is false for AND operations,
+true for OR), at which point nfind moves on to the next file name.
+
+nfind is a stripped down version of the Linux utility find.  Thus it implements
+only the subset of command-line arguments to find containing:
+
+* the "real" options -P and -L;
+
+* the expression components -depth, -exec, -maxdepth, -name, -newer, -print;
+
+* the operators -o and -a.
+
+Except as noted below (and the limit above on what may appear in the command-
+line arguments) nfind has the same behavior as find (see "man find" and Matthew
+and Stones, pp. 181-183).  Thus
+
+* The options -P (never follow symbolic links) and -L (follow symbolic links)
+  must appear before the first filename, if at all.  The default is -P.  If
+  more than one of -P and -L is specified, the last one takes effect.
+
+* The list of filenames begins with the first argument that is not -P or -L and
+  ends just before the first subsequent argument that begins with a -.
+  The search is rooted at the current working directory . if no FILENAMEs
+  are specified.
+
+* The EXPRESSION begins after the last filename (if any) and is made up of
+
+  + options (-depth and -maxdepth), which affect the overall operation rather
+    than the processing of a specific file and always return true;
+
+  + tests (-name and -newer), which return a true or false value;
+
+  + actions (-exec and -print), which may have side effects and return a true
+    or false value;
+
+  + operators (-o and -a).
+
+Use the submit command (see below) to turn in the C source file(s) for nfind, a
+Makefile, and your log file (see below) as assignment 1; e.g.,
+
+  % /c/cs480/bin/submit 1 Makefile nfind.c log.nfind
+
+YOU MUST SUBMIT YOUR FILES (INCLUDING THE LOG FILE) AT THE END OF ANY SESSION
+WHERE YOU HAVE SPENT AT LEAST ONE HOUR WRITING OR DEBUGGING CODE, AND AT LEAST
+ONCE EVERY HOUR DURING LONGER SESSIONS.  (All submissions are retained.)
+
+Notes:
+
+1. Useful library functions:
+
+   * stat(2) and lstat(2) get the status of a file.
+
+   * opendir(3), readdir(3), and closedir(3) deal with directories (see
+     /c/cs480/Hwk1/Dir.c for one example, and Matthew and Stones pp. 124-126
+     for another).
+
+   * fnmatch(3) does regular expression matching (needed after -name).
+
+   * strdup(3) returns a copy of a string.
+
+   * strtoul(3) converts strings to unsigned longs.
+
+   * system(3) spawns a shell to execute a command.  You may use it ONLY to
+     implement -exec.
+
+   See their man pages (e.g., "man 2 stat" or "man 3 opendir") or Matthew and
+   Stones for details.
+
+   Note: You must add the line
+
+     #define _GNU_SOURCE
+
+   before your #include-s to define prototypes for lstat() and strdup().
+
+
+2. When nfind encounters an error, it writes a one-line error message (which
+   need not coincide with that produced by find) to stderr.  If the error is
+   in a command-line argument (including when stat() or lstat() fails on the
+   argument to -newer), it exits immediately; otherwise it continues execution.
+
+   Aside:  In some cases (e.g., when -depth or -maxdepth follows -print) find
+   may write a multiline warning message.  nfind must write one-line messages.
+
+3. nfind must:
+
+   * Free all storage before exiting, except if there is a command-line error.
+
+   * Replace any {} that is, or is embedded in, an argument to -exec by the full
+     name of the current file.  (The replacement operation need only run in time
+     quadratic in the length of the command passed to system().)
+
+   * Detect a loop involving symbolic links (with the -L flag) and report an
+     error.  (Use the device number and inode to identify identical files.)
+
+   * Check for errors from system calls.  However, if you stat() or lstat() a
+     file once successfully, you may assume that you may do so again without
+     encountering an error.
+
+   * Give a warning (a one-line message to stderr) but not exit when -depth or
+     -maxdepth appears after a non-option expression component.
+
+   * Implement -newer using the st_mtim entry of the struct returned by stat()
+     and lstat().
+     The Zoo clients support nanosecond resolution for file modification
+     times.  The st_mtim entry of the stat buffer contains two fields:
+     tv_sec and tv_nsec, which are (respectively) the number of seconds
+     since the start of Unix time, and the number of nanoseconds since
+     the start of the current second.  (The command ls -l --full-time
+     allows you to see this resolution from the command line.)
+
+   * Preserve trailing /'s in filenames that appear on the command line.
+
+   * Use strtoul() CORRECTLY to read maxdepth.
+
+4. nfind may fail gracefully (with no valgrind errors or segmentation faults)
+   if the depth of the depth-first traversal exceeds the number of file
+   descriptors available.
+
+5. For simplicity nfind may ignore all security considerations (see "man find").
+
+6. Hwk1/Compare runs find and nfind and reports the differences, if any.
+
+7. Subtle Point:  find uses execvp() rather than system() to execute shell
+   commands.  To achieve the same effect nfind would have to escape embedded
+   blanks and shell metacharacters in the string passed to system().  For
+   example,
+
+     % nfind . -exec echo foo '>' bar \;
+
+   writes the output from each invocation of echo to the file bar, while
+
+     %  find . -exec echo foo '>' bar \;
+
+   writes "foo > bar" to stdout for each invocation.  You may ignore this point.
+
+
+8. Keep track of how you spend your time in completing this assignment.  Your
+   log file should be of the general form (that below is *fictional*):
+
+     ESTIMATE of time to complete assignment: 10 hours
+
+	   Start  Time
+     Date  Time   Spent Work completed
+     ----  -----  ----  --------------
+     9/03  10:15  1:20  Read assignment and documentation for find
+     9/05  20:15  1:00  Played with Hwk1/nfind to discover how it works
+     9/08  12:45  3:30  Sketched/implemented solution using recursion
+     9/08  14:00  0:40  Recursive solution cannot handle all cases
+     9/10  21:20  4:00  Sketched new solution using two stacks and a queue
+     9/12  09:00  4:45  Wrote/typed-in program; eliminated compile-time errors
+     9/13  20:00  4:30  Debugged program; it passes every public test
+		 -----
+		 19:45  TOTAL time spent
+
+     I discussed my solution with: Peter Salovey, Ben Polak, Tamar Gendler,
+     and Marvin Chun.
+
+     <A brief discussion of the major difficulties encountered>
+
+   but MUST contain
+
+   * your estimate of the time required (made prior to writing any code),
+
+   * the total time you actually spent on the assignment,
+
+   * the names of all others (but not members of the teaching staff) with whom
+     you discussed the assignment for more than 10 minutes, and
+
+   * a brief discussion (100 words MINIMUM) of the major difficulties that you
+     encountered in developing/debugging (and there will always be some).
+
+   This log will generally be worth 5-10% of the total grade.
+
+   N.B.  To facilitate analysis, the log file MUST be the only file submitted
+   whose name contains the string "log" and the estimate / total MUST be on the
+   only line in that file that contains the string "ESTIMATE" / "TOTAL".
+
+9. The submit program can be invoked in eight different ways:
+
+       /c/cs480/bin/submit  1  Makefile nfind.c nfind.log
+
+   submits the named source files as your solution to Homework #1;
+
+       /c/cs480/bin/check  2
+
+   lists the files that you submitted for Homework #2;
+
+       /c/cs480/bin/unsubmit  3  error.submit bogus.solution
+
+   deletes the named files that you submitted previously for Homework #3 (which
+   is useful if you accidentally submit the wrong file);
+
+       /c/cs480/bin/makeit  4  nfind
+
+   runs "make" on the files that you submitted previously for Homework #4;
+
+       /c/cs480/bin/testit  5  nfind
+
+   runs the public test script for nfind using the files that you submitted
+   previously for Homework #5;
+
+       /c/cs480/bin/protect  6  nfind.c find.log
+
+   protects the named files that you submitted previously for Homework #6 (so
+   they cannot be deleted accidentally);
+
+       /c/cs480/bin/unprotect  7  nfind.c nfind.log
+
+   unprotects the named files that you submitted previously for Homework #7 (so
+   they can be deleted); and
+
+       /c/cs480/bin/retrieve  8  nfind.c nfind.log
+
+   and
+
+       /c/csXYZ/bin/retrieve  8  -d"2012/09/11 20:00" nfind.c
+
+   retrieve copies of the named files that you submitted previously for
+   Homework #8 (in case you accidentally delete your own copies).  The day
+   and hour are optional and request the latest submission prior to that time
+   (see the -d flag under "man co" for how to specify times).
+
+10. Prudence (and a 5-point penalty for code that does not make) suggests that
+   you run makeit ("makeit 1 nfind") after submitting your source files (see
+   above).  Better yet, run testit ("testit 1 nfind").
+
+11. When available, the public grading script will be /c/cs480/Hwk1/test.nfind
+   and the reference solution will be /c/cs480/Hwk1/nfind.
+
+   To run your program on the file for Test #01, type
+
+     % /c/cs480/Hwk1/Tests/n01
+
+    or
+
+     % /c/cs480/Hwk1/test.nfind 01
+
+   (you may specify more than one test here).  To compare the output from your
+   program with the expected output, type
+
+     % /c/cs480/Hwk1/Tests/n01 | cmp - /c/cs480/Hwk1/Tests/n01.t
+
+   (cmp outputs the first character where the files differ) or
+
+     % /c/cs480/Hwk1/Tests/n01 | diff - /c/cs480/Hwk1/Tests/n01.t
+
+   (diff outputs the lines where they differ but uses a looser definition for
+   "identical").
+
+   If your output looks the same as what is expected, but your program still
+   fails the test, there are probably some invisible characters in your output.
+   To make all characters visible (except blanks), type
+
+     % /c/cs480/Hwk1/Tests/n01 | cat -vet
+
+   or
+
+     % /c/cs480/Hwk1/Tests/n01 | od -bc
+
+   You can use the script /c/cs323/bin/tester to run your own tests.
+
+								CS-323-08/30/17

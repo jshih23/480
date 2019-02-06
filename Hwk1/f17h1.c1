@@ -1,0 +1,38 @@
+    CLARIFICATION #1
+
+CPSC 323   Homework #1  Directory "Tree" Search
+
+0.  You need to submit a Makefile with your code and log.
+    (See the 8/30 reading in Matthew and Stones on make.)
+
+    From the Style guide (Guidelines for grading programming style):
+
+    23) Programs must compile under "gcc -std=c99 -pedantic -Wall"
+    without generating ANY warning messages.
+
+1.  Using cd .. on the command line in bash and using
+    chdir("..") in your C program have different results
+    if you arrived at the current directory via a symbolic
+    link.  In particular, cd .. will return to the symbolic
+    link's parent directory, while chdir("..") will change
+    to the parent of the destination of the link, which is
+    generally not what you want for this assignment.
+
+    Advice: avoid using chdir(), even though it is used in
+    the directory scanning example in the Matthew and Stones
+    text.
+
+2.  You may assume that the -print action does not fail,
+    that is, -print always returns true.
+
+3.  Yes, you will have to deal with errno (in the Matthew
+    and Stones text, pp. 127-128, as well as in the man
+    pages.)
+
+4.  If you choose to use basename(), be aware that there
+    are two different versions, the POSIX version and the
+    GNU version (see man 3 basename).
+
+5.  No flags need be set when using fnmatch().
+
+CS-323-09/09/17

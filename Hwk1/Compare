@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+#   Usage: Compare [argument]*
+#
+# Compare the results from running /bin/find and ./nfind with the specified
+# argumane list.
+
+STDOUT=find.stdout.$$
+STDERR=find.stderr.$$
+nSTDOUT=nfind.stdout.$$
+nSTDERR=nfind.stderr.$$
+
+trap "/bin/rm -f $STDOUT $STDERR $nSTDOUT $nSTDERR ; exit" 0 1 2 3 9 15
+
+if /bin/test ! -e ./nfind ; then
+  /bin/make nfind
+fi
+
+# Run find and ./nfind with the arguments specified
+echo $*
+   find $* > $STDOUT  2>$STDERR
+./nfind $* > $nSTDOUT 2>$nSTDERR
+
+# Print each stdout if they differ
+O=`cmp $STDOUT $nSTDOUT 2>&1`
+if /bin/test "$O" ; then
+  more $STDOUT $nSTDOUT
+fi
+
+# Print each stderr if they contain different numbers of lines
+E=`wc -l < $STDERR`
+nE=`wc -l < $nSTDERR`
+if /bin/test $E -ne $nE; then
+  more $STDERR $nSTDERR
+fi
